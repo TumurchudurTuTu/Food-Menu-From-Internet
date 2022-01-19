@@ -3,19 +3,15 @@ import Search from "./model/Search";
 import { elements, renderLoader, clearLoader } from "./view/base";
 import * as searchView from "./view/searchView";
 import Recipe from "./model/Recipe";
+import List from "./model/List";
+import * as listView from './view/listView';
+import Like from "./model/Like";
 import {
   renderRecipe,
   clearRecipe,
   highlightSelectedRecipe
 } from "./view/recipeView";
-
-/**
- * Web app төлөв
- * - Хайлтын query, үр дүн
- * - Тухайн үзүүлж байгаа жор
- * - Лайкласан жорууд
- * - Захиалж байгаа жорын найрлаганууд
- */
+import { startCase } from "lodash";
 
 const state = {};
 
@@ -66,26 +62,87 @@ elements.pageButtons.addEventListener("click", e => {
 const controlRecipe = async () => {
   // 1) URL-аас ID-ийг салгаж
   const id = window.location.hash.replace("#", "");
+  
+  // URL deer id baigaa esehiig shalgana
+  if(id){
+    // 2) Жорын моделийг үүсгэж өгнө.
+    state.recipe = new Recipe(id);
 
-  // 2) Жорын моделийг үүсгэж өгнө.
-  state.recipe = new Recipe(id);
+    // 3) UI дэлгэцийг бэлтгэнэ.
+    clearRecipe();
+    renderLoader(elements.recipeDiv);
+    highlightSelectedRecipe(id);
 
-  // 3) UI дэлгэцийг бэлтгэнэ.
-  clearRecipe();
-  renderLoader(elements.recipeDiv);
-  highlightSelectedRecipe(id);
+    // 4) Жороо татаж авчирна.
+    await state.recipe.getRecipe();
 
-  // 4) Жороо татаж авчирна.
-  await state.recipe.getRecipe();
+    // 5) Жорыг гүйцэтгэх хугацаа болон орцыг тооцоолно
+    clearLoader();
+    state.recipe.calcTime();
+    state.recipe.calcHuniiToo();
 
-  // 5) Жорыг гүйцэтгэх хугацаа болон орцыг тооцоолно
-  clearLoader();
-  state.recipe.calcTime();
-  state.recipe.calcHuniiToo();
+    // 6) Жороо дэлгэцэнд гаргана
+    renderRecipe(state.recipe);
+  }
 
-  // 6) Жороо дэлгэцэнд гаргана
-  renderRecipe(state.recipe);
 };
 
-window.addEventListener("hashchange", controlRecipe);
-window.addEventListener("load", controlRecipe);
+// window.addEventListener("hashchange", controlRecipe);
+// window.addEventListener("load", controlRecipe);
+
+['hashchange', 'load' ].forEach( e => window.addEventListener(e , controlRecipe));
+
+// Nairlaganii controller
+
+const controlList = ()=> {
+ // Nairlagiin modeliig uusgeh
+ state.list = new List();
+ // Umnu ni haragdaj baisan nairlaganuudiig delgetsees arilgah
+ listView.clearItems();
+ // Ug model ruu odoo haragdaj baigaa jornii buh nairlagiig avch hiine
+ state.recipe.ingredients.forEach( n => {
+   // Tuhain nairlagiig model ruu hiine
+   const item = state.list.addItem(n);
+   // Tuhain nairlagiig delgetsend gargana
+   listView.renderItem(item);
+  });
+}
+
+// Like controller
+const controlLike = () => {
+  // 1. Like-n model-iig uusgene
+  // if(state.likes === false) state.likes = new Like();
+  if(!state.likes) state.likes = new Like();
+  // 2. Odoo haragdaj baigaa joriin ID-g olj avah
+  const currentRecipeId = state.recipe.id;
+  // 3. Ene joriig like hiisen esehiig shalgah
+  if(state.likes.isLiked(currentRecipeId)){
+   // Like hiisen bol like iig boliulna
+   state.likes.deleteLike(currentRecipeId);
+   console.log(state.likes);
+  } else {
+   // Like hiigeegui bol like hiine
+   state.likes.addLike(currentRecipeId, state.recipe.title, state.recipe.publisher, state.recipe.image_url ); 
+   console.log(state.likes);
+  }
+
+} 
+
+
+elements.recipeDiv.addEventListener('click', e => {
+  if(e.target.matches('.recipe__btn, .recipe__btn *')){
+    controlList();
+  } else if (e.target.matches('.recipe__love, .recipe__love *')){
+    controlLike();
+  }
+});
+
+elements.shoppingList.addEventListener('click', e => {
+  // click hiisen li elementiin data-itemid attribute-g shuuj gargaj avah
+  const id = e.target.closest('.shopping__item').dataset.itemid; 
+  // Oldson id-tei ortsiig model-oos ustgana
+  state.list.deleteItem(id);
+  // Delgetsees iim id-tei ortsiig olj ustgana
+  listView.deleteItem(id);
+  
+})
