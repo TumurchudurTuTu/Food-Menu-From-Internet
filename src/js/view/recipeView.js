@@ -1,5 +1,5 @@
 import { elements } from "./base";
-const renderNairlaga = orts => `
+const renderNairlaga = (orts) => `
     <li class="recipe__item">
         <svg class="recipe__icon">
             <use href="img/icons.svg#icon-check"></use>
@@ -11,9 +11,9 @@ const renderNairlaga = orts => `
     </li>
 `;
 
-export const highlightSelectedRecipe = id => {
+export const highlightSelectedRecipe = (id) => {
   const arr = Array.from(document.querySelectorAll(".results__link"));
-  arr.forEach(el => el.classList.remove("results__link--active"));
+  arr.forEach((el) => el.classList.remove("results__link--active"));
 
   const domObj = document.querySelector(`a[href*="${id}"]`);
 
@@ -25,7 +25,7 @@ export const clearRecipe = () => {
   elements.recipeDiv.innerHTML = "";
 };
 
-export const renderRecipe = recipe => {
+export const renderRecipe = (recipe, isLiked) => {
   // Энэ жорыг дэлгэцэнд гаргаж үзүүлнэ.
   const html = `
     <figure class="recipe__fig">
@@ -71,7 +71,9 @@ export const renderRecipe = recipe => {
         </div>
         <button class="recipe__love">
             <svg class="header__likes">
-                <use href="img/icons.svg#icon-heart-outlined"></use>
+                <use href="img/icons.svg#icon-heart${
+                  isLiked ? "" : "-outlined"
+                }"></use>
             </svg>
         </button>
         </div>
@@ -82,7 +84,7 @@ export const renderRecipe = recipe => {
         <ul class="recipe__ingredient-list">
           
             ${recipe.ingredients
-              .map(el => renderNairlaga(el))
+              .map((el) => renderNairlaga(el))
               .join(" ")}          
 
         </ul>
